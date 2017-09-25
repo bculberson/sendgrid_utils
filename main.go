@@ -27,6 +27,10 @@ var (
 	exportLists             = app.Command("exportLists", "Get all lists as csv")
 	exportListsCsvFile      = exportLists.Arg("outputFile", "Output file (csv)").Required().String()
 
+	exportList             = app.Command("exportList", "Get list as csv")
+	exportListListId       = exportList.Arg("ListId", "List Id").Required().Int()
+	exportListCsvFile      = exportList.Arg("outputFile", "Output file (csv)").Required().String()
+
 	sendGridApiKey = ""
 )
 
@@ -69,5 +73,21 @@ func main() {
 		for _, list := range lists {
 			f.WriteString(fmt.Sprintf("%d,\"%s\",%d\n",list.Id,list.Name,list.Count))
 		}
+	case exportList.FullCommand():
+		recipients, err := lists.GetListRecipients(*exportListListId, sendGridApiKey)
+		if err != nil {
+			log.Fatalf("Error getting recipients for list: %v", err.Error())
+		}
+		//export
+		f, err := os.Create(*exportListCsvFile)
+		if err != nil {
+			log.Fatalf("Error creating file: %v", err.Error())
+		}
+		defer f.Close()
+		f.WriteString("email,first_name,last_name\n")
+		for _, recipient := range recipients {
+			f.WriteString(fmt.Sprintf("\"%s\",\"%s\",\"%s\"\n",recipient.Email, recipient.FirstName, recipient.LastName))
+		}
 	}
+
 }

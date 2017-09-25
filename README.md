@@ -57,6 +57,13 @@ run:
 ./bin/sg_utils deleteList $ID
 ```
 
+#### Export a List
+
+run:
+```bash
+./bin/sg_utils exportList $ID "<PATH_TO_CSV>"
+```
+
 #### Sync a List with a csv
 
 run:
@@ -66,5 +73,5 @@ run:
 
 #### Upcoming Features
 
-* Custom Field Support in List Sync
+* Custom Field Support in Lists
 * Optional wait for list sync completion by SendGrid to exit

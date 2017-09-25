@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"log"
 )
 
 const pageSize = 1000
@@ -71,6 +72,7 @@ func GetLists(sendGridApiKey string) ([]List, error) {
 			}
 			return result.Lists, nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -111,6 +113,7 @@ func CreateList(name string, sendGridApiKey string) (int, error) {
 			}
 			return result.Id, nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -138,6 +141,7 @@ func DeleteList(listId int, deleteRecipients bool, sendGridApiKey string) error 
 		if res.StatusCode == http.StatusAccepted {
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -195,6 +199,7 @@ func addRecipientsToList(recipients []Recipient, listId int, sendGridApiKey stri
 		if res.StatusCode == http.StatusCreated {
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -250,6 +255,7 @@ func removeListRecipient(emailAddress string, listId int, sendGridApiKey string)
 		} else if res.StatusCode == http.StatusOK {
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -286,6 +292,7 @@ func GetListRecipients(listId int, sendGridApiKey string) ([]Recipient, error) {
 			}
 			result = append(result, recipients.Recipients...)
 		} else if res.StatusCode == http.StatusTooManyRequests {
+			log.Printf("Over rate limit for %s, retrying\n", url)
 			time.Sleep(time.Second)
 			continue
 		} else {

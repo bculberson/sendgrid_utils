@@ -252,7 +252,7 @@ func removeListRecipient(emailAddress string, listId int, sendGridApiKey string)
 		}
 		if res.StatusCode == http.StatusNotFound {
 			return nil
-		} else if res.StatusCode == http.StatusOK {
+		} else if res.StatusCode == http.StatusNoContent {
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			log.Printf("Over rate limit for %s, retrying\n", url)

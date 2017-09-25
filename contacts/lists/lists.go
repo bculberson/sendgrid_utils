@@ -6,16 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
-	"log"
 )
 
 const pageSize = 1000
 const batchSize = 1000
-const parallelDeletes = 10
+const parallelDeletes = 20
 
 type CustomField struct {
 	Id    int         `json:"id"`
@@ -44,9 +44,9 @@ type recipientIn struct {
 }
 
 type List struct {
-	Id	  int `json:"id"`
+	Id    int    `json:"id"`
 	Name  string `json:"name"`
-	Count int `json:"recipient_count"`
+	Count int    `json:"recipient_count"`
 }
 
 func GetLists(sendGridApiKey string) ([]List, error) {

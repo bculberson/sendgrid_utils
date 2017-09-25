@@ -14,14 +14,14 @@ import (
 func getListChanges(recipientsForList map[string]lists.Recipient, recipientsInList map[string]lists.Recipient) (map[string]lists.Recipient, map[string]lists.Recipient, map[string]lists.Recipient) {
 	removeRecipients := make(map[string]lists.Recipient)
 	for key, recipient := range recipientsInList {
-		if _, ok := recipientsForList[recipient.Email]; !ok {
+		if _, ok := recipientsForList[strings.ToLower(recipient.Email)]; !ok {
 			removeRecipients[key] = recipient
 		}
 	}
 	addRecipients := make(map[string]lists.Recipient)
 	modifyRecipients := make(map[string]lists.Recipient)
 	for key, rIn := range recipientsForList {
-		if rThere, ok := recipientsInList[rIn.Email]; !ok {
+		if rThere, ok := recipientsInList[strings.ToLower(rIn.Email)]; !ok {
 			addRecipients[key] = rIn
 		} else {
 			if rIn.FirstName != rThere.FirstName || rIn.LastName != rThere.LastName {

@@ -42,6 +42,43 @@ type recipientIn struct {
 	LastName  string `json:"last_name,omitempty"`
 }
 
+type List struct {
+	Id	  int `json:"id"`
+	Name  string `json:"name"`
+	Count int `json:"recipient_count"`
+}
+
+func GetLists(sendGridApiKey string) ([]List, error) {
+	url := "https://api.sendgrid.com/v3/contactdb/lists"
+	for {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", sendGridApiKey))
+		req.Header.Add("Content-Type", "application/json")
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if res.StatusCode == http.StatusOK {
+			var result struct {
+				Lists []List `json:"lists"`
+			}
+			err = json.NewDecoder(res.Body).Decode(&result)
+			if err != nil {
+				return nil, err
+			}
+			return result.Lists, nil
+		} else if res.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(time.Second)
+			continue
+		} else {
+			return nil, errors.New(fmt.Sprintf("Error setting lists, StatusCode: %d", res.StatusCode))
+		}
+	}
+}
+
 func CreateList(name string, sendGridApiKey string) (int, error) {
 	create := struct {
 		Name string `json:"name"`

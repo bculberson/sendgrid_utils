@@ -24,6 +24,9 @@ var (
 	deleteListRecipients = deleteList.Flag("deleteRecipients", "Delete the recipients from database").Default("false").Bool()
 	deleteListListId     = deleteList.Arg("id", "Id for list").Required().Int()
 
+	exportLists             = app.Command("exportLists", "Get all lists as csv")
+	exportListsCsvFile      = exportLists.Arg("outputFile", "Output file (csv)").Required().String()
+
 	sendGridApiKey = ""
 )
 
@@ -50,6 +53,21 @@ func main() {
 		err := lists.DeleteList(*deleteListListId, *deleteListRecipients, sendGridApiKey)
 		if err != nil {
 			log.Fatalf("Error deleting list: %v", err.Error())
+		}
+	case exportLists.FullCommand():
+		lists, err := lists.GetLists(sendGridApiKey)
+		if err != nil {
+			log.Fatalf("Error getting lists: %v", err.Error())
+		}
+		//export
+		f, err := os.Create(*exportListsCsvFile)
+		if err != nil {
+			log.Fatalf("Error creating file: %v", err.Error())
+		}
+		defer f.Close()
+		f.WriteString("id,name,count\n")
+		for _, list := range lists {
+			f.WriteString(fmt.Sprintf("%d,\"%s\",%d\n",list.Id,list.Name,list.Count))
 		}
 	}
 }

@@ -35,6 +35,14 @@ export SENDGRID_API_KEY=<YOUR_API_KEY>
 
 ### Lists
 
+#### Export Lists
+
+run:
+```bash
+./bin/sg_utils exportLists "<PATH_FOR_CSV>"
+cat out.csv
+```
+
 #### Create a List
 
 run:

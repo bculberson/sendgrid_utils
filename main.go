@@ -10,25 +10,25 @@ import (
 )
 
 var (
-	app   = kingpin.New("sg_utils", "command-line utilites for sendgrid")
-	debug = kingpin.Flag("debug", "Enable debug mode.").Short('d').Default("false").Bool()
+	app    = kingpin.New("sg_utils", "command-line utilites for sendgrid")
+	dryRun = kingpin.Flag("dryRun", "Dry run, no changes made to lists.").Short('d').Default("false").Bool()
 
 	syncList        = app.Command("syncList", "Sync an existing list with csv")
 	syncListCsvFile = syncList.Arg("inputFile", "Input file (csv)").Required().ExistingFile()
-	syncListListId  = syncList.Arg("ListId", "List Id").Required().Int()
+	syncListListId  = syncList.Arg("listId", "List Id").Required().Int()
 
 	createList = app.Command("createList", "Create a list")
 	listName   = createList.Arg("name", "Name for list").Required().String()
 
 	deleteList           = app.Command("deleteList", "Delete a list")
-	deleteListRecipients = deleteList.Flag("deleteRecipients", "Delete the recipients from database").Default("false").Bool()
+	deleteListRecipients = deleteList.Flag("delete-recipients", "Delete the recipients from database").Default("false").Bool()
 	deleteListListId     = deleteList.Arg("id", "Id for list").Required().Int()
 
 	exportLists        = app.Command("exportLists", "Get all lists as csv")
 	exportListsCsvFile = exportLists.Arg("outputFile", "Output file (csv)").Required().String()
 
 	exportList        = app.Command("exportList", "Get list as csv")
-	exportListListId  = exportList.Arg("ListId", "List Id").Required().Int()
+	exportListListId  = exportList.Arg("listId", "List Id").Required().Int()
 	exportListCsvFile = exportList.Arg("outputFile", "Output file (csv)").Required().String()
 
 	sendGridApiKey = ""

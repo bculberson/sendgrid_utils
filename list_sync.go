@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 
@@ -77,6 +78,7 @@ func listSyncCommand() {
 
 	recipientsInList := make(map[string]lists.Recipient, 0)
 	go func() {
+		defer wg.Done()
 		var recipients []lists.Recipient
 		recipients, err = lists.GetListRecipients(*syncListListId, sendGridApiKey)
 		if err != nil {
@@ -85,12 +87,11 @@ func listSyncCommand() {
 		for _, recipient := range recipients {
 			recipientsInList[strings.ToLower(recipient.Email)] = recipient
 		}
-
-		wg.Done()
 	}()
 
 	recipientsForList := make(map[string]lists.Recipient, 0)
 	go func() {
+		defer wg.Done()
 		fields, records, err := csv.ParseCsv(*syncListCsvFile)
 		if err != nil {
 			log.Fatalf("Error parsing csv: %v", err.Error())
@@ -99,54 +100,54 @@ func listSyncCommand() {
 		if err != nil {
 			log.Fatalf("Error getting emails from csv: %v", err.Error())
 		}
-		wg.Done()
 	}()
 
 	wg.Wait()
 
-	fmt.Println(fmt.Sprintf("Recipients in csv: %d", len(recipientsForList)))
-	fmt.Println(fmt.Sprintf("Recipients in list: %d", len(recipientsInList)))
+	fmt.Printf("Recipients in csv: %d\n", len(recipientsForList))
+	fmt.Printf("Recipients in list: %d\n", len(recipientsInList))
 
 	remove, add, modify := getListChanges(recipientsForList, recipientsInList)
-	fmt.Println(fmt.Sprintf("Removing %d recipients in list", len(remove)))
-	fmt.Println(fmt.Sprintf("Adding %d recipients to list", len(add)))
-	fmt.Println(fmt.Sprintf("Modifying %d recipients in list", len(modify)))
+	fmt.Printf("Removing %d recipients in list\n", len(remove))
+	fmt.Printf("Adding %d recipients to list\n", len(add))
+	fmt.Printf("Modifying %d recipients in list\n", len(modify))
 
-	if !*debug {
-		wg.Add(3)
-		go func() {
-			recipientsToDelete := make([]lists.Recipient, 0)
-			for _, recipient := range remove {
-				recipientsToDelete = append(recipientsToDelete, recipient)
-			}
-			err := lists.RemoveListRecipients(recipientsToDelete, *syncListListId, sendGridApiKey)
-			if err != nil {
-				log.Fatalf("Error removing recipients from list: %v", err.Error())
-			}
-			wg.Done()
-		}()
-		go func() {
-			recipientsToAdd := make([]lists.Recipient, 0)
-			for _, recipient := range add {
-				recipientsToAdd = append(recipientsToAdd, recipient)
-			}
-			err = lists.AddRecipientsToList(recipientsToAdd, *syncListListId, sendGridApiKey)
-			if err != nil {
-				log.Fatalf("Error adding recipients to list: %v", err.Error())
-			}
-			wg.Done()
-		}()
-		go func() {
-			recipientsToModify := make([]lists.Recipient, 0)
-			for _, recipient := range modify {
-				recipientsToModify = append(recipientsToModify, recipient)
-			}
-			err = lists.AddRecipientsToList(recipientsToModify, *syncListListId, sendGridApiKey)
-			if err != nil {
-				log.Fatalf("Error modifying recipients in list: %v", err.Error())
-			}
-			wg.Done()
-		}()
-		wg.Wait()
+	if *dryRun {
+		os.Exit(0)
 	}
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		var recipientsToDelete []lists.Recipient
+		for _, recipient := range remove {
+			recipientsToDelete = append(recipientsToDelete, recipient)
+		}
+		err := lists.RemoveListRecipients(recipientsToDelete, *syncListListId, sendGridApiKey)
+		if err != nil {
+			log.Fatalf("Error removing recipients from list: %v", err.Error())
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		var recipientsToAdd []lists.Recipient
+		for _, recipient := range add {
+			recipientsToAdd = append(recipientsToAdd, recipient)
+		}
+		err = lists.AddRecipientsToList(recipientsToAdd, *syncListListId, sendGridApiKey)
+		if err != nil {
+			log.Fatalf("Error adding recipients to list: %v", err.Error())
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		var recipientsToModify []lists.Recipient
+		for _, recipient := range modify {
+			recipientsToModify = append(recipientsToModify, recipient)
+		}
+		err = lists.AddRecipientsToList(recipientsToModify, *syncListListId, sendGridApiKey)
+		if err != nil {
+			log.Fatalf("Error modifying recipients in list: %v", err.Error())
+		}
+	}()
+	wg.Wait()
 }

@@ -9,13 +9,11 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
 const pageSize = 1000
 const batchSize = 1000
-const parallelDeletes = 20
 
 type CustomField struct {
 	Id    int         `json:"id"`
@@ -208,39 +206,41 @@ func addRecipientsToList(recipients []Recipient, listId int, sendGridApiKey stri
 	}
 }
 
-func RemoveListRecipients(emailAddresses []string, listId int, sendGridApiKey string) error {
-	var err error
-	var wg sync.WaitGroup
-	errorMutex := sync.Mutex{}
-	deletes := make(chan string)
-
-	for i := 0; i < parallelDeletes; i++ {
-		wg.Add(1)
-		go func() {
-			for emailAddress := range deletes {
-				thisErr := removeListRecipient(emailAddress, listId, sendGridApiKey)
-				if thisErr != nil {
-					errorMutex.Lock()
-					err = thisErr
-					errorMutex.Unlock()
-				}
+func RemoveListRecipients(recipients []Recipient, listId int, sendGridApiKey string) error {
+	batch := make([]Recipient, 0)
+	for _, recipient := range recipients {
+		batch = append(batch, recipient)
+		if len(batch) == batchSize {
+			err := removeListRecipients(batch, listId, sendGridApiKey)
+			if err != nil {
+				return err
 			}
-			wg.Done()
-		}()
+			batch = make([]Recipient, 0)
+		}
 	}
-
-	for _, emailAddress := range emailAddresses {
-		deletes <- emailAddress
+	if len(batch) > 0 {
+		err := removeListRecipients(batch, listId, sendGridApiKey)
+		if err != nil {
+			return err
+		}
 	}
-	close(deletes)
-	return err
+	return nil
 }
 
-func removeListRecipient(emailAddress string, listId int, sendGridApiKey string) error {
-	id := base64.StdEncoding.EncodeToString([]byte(strings.ToLower(emailAddress)))
+func removeListRecipients(recipients []Recipient, listId int, sendGridApiKey string) error {
+	ids := make([]string, len(recipients))
+	for ix, r := range recipients {
+		ids[ix] = base64.StdEncoding.EncodeToString([]byte(strings.ToLower(r.Email)))
+	}
+	b := new(bytes.Buffer)
+	err := json.NewEncoder(b).Encode(&ids)
+	if err != nil {
+		return err
+	}
+
 	for {
-		url := fmt.Sprintf("https://api.sendgrid.com/v3/contactdb/lists/%d/recipients/%s", listId, id)
-		req, err := http.NewRequest("DELETE", url, nil)
+		url := fmt.Sprintf("https://api.sendgrid.com/v3/contactdb/lists/%d/recipients", listId)
+		req, err := http.NewRequest("DELETE", url, b)
 		if err != nil {
 			return err
 		}
@@ -250,9 +250,7 @@ func removeListRecipient(emailAddress string, listId int, sendGridApiKey string)
 		if err != nil {
 			return err
 		}
-		if res.StatusCode == http.StatusNotFound {
-			return nil
-		} else if res.StatusCode == http.StatusNoContent {
+		if res.StatusCode == http.StatusNoContent {
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			log.Printf("Over rate limit for %s, retrying\n", url)

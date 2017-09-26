@@ -115,9 +115,9 @@ func listSyncCommand() {
 	if !*debug {
 		wg.Add(3)
 		go func() {
-			recipientsToDelete := make([]string, 0)
+			recipientsToDelete := make([]lists.Recipient, 0)
 			for _, recipient := range remove {
-				recipientsToDelete = append(recipientsToDelete, recipient.Email)
+				recipientsToDelete = append(recipientsToDelete, recipient)
 			}
 			err := lists.RemoveListRecipients(recipientsToDelete, *syncListListId, sendGridApiKey)
 			if err != nil {

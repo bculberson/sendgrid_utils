@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/bculberson/sendgrid_utils/contacts"
 )
 
 const pageSize = 1000
@@ -137,6 +139,7 @@ func DeleteList(listId int, deleteRecipients bool, sendGridApiKey string) error 
 			return err
 		}
 		if res.StatusCode == http.StatusAccepted {
+			contacts.WaitForNoDelay(sendGridApiKey)
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			log.Printf("Over rate limit for %s, retrying\n", url)
@@ -195,6 +198,7 @@ func addRecipientsToList(recipients []Recipient, listId int, sendGridApiKey stri
 			return err
 		}
 		if res.StatusCode == http.StatusCreated {
+			contacts.WaitForNoDelay(sendGridApiKey)
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			log.Printf("Over rate limit for %s, retrying\n", url)
@@ -251,6 +255,7 @@ func removeListRecipients(recipients []Recipient, listId int, sendGridApiKey str
 			return err
 		}
 		if res.StatusCode == http.StatusNoContent {
+			contacts.WaitForNoDelay(sendGridApiKey)
 			return nil
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			log.Printf("Over rate limit for %s, retrying\n", url)

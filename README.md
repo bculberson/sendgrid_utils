@@ -74,4 +74,3 @@ run:
 #### Upcoming Features
 
 * Custom Field Support in Lists
-* Optional wait for list sync completion by SendGrid to exit
